@@ -35,3 +35,38 @@ def decode_bits_to_rgb(encoded_rgb):
     b = encoded_rgb & 0xFF  # Blue is the lowest 8 bits
 
     return r, g, b
+
+
+def encode_height_width_to_32bit(height, width):
+    """
+    Encodes two 16-bit integers into a single 32-bit integer.
+
+    Args:
+        height (int): The 16-bit integer for the high 16 bits (0–65535).
+        width (int): The 16-bit integer for the low 16 bits (0–65535).
+
+    Returns:
+        int: A 32-bit integer combining the two 16-bit integers.
+    """
+    if not (0 <= height < 2 ** 16 and 0 <= width < 2 ** 16):
+        raise ValueError("Both integers must be 16-bit (0–65535).")
+
+    return (height << 16) | width
+
+
+def decode_height_width_to_16bit(value):
+    """
+    Decodes a 32-bit integer into two 16-bit integers.
+
+    Args:
+        value (int): The 32-bit integer to decode.
+
+    Returns:
+        tuple: A tuple of two integers (height, width), each 16 bits.
+    """
+    if not (0 <= value < 2 ** 32):
+        raise ValueError("Value must be a 32-bit integer (0–4,294,967,295).")
+
+    height = (value >> 16) & 0xFFFF  # Extract the high 16 bits (height)
+    width = value & 0xFFFF  # Extract the low 16 bits (width)
+    return height, width
