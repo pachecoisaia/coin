@@ -44,7 +44,7 @@ else:
 results = {'fp_bpp': [], 'hp_bpp': [], 'fp_psnr': [], 'hp_psnr': []}
 
 # Create directory to store experiments
-if not os.path.exists(args.logdir):
+if not os.path .exists(args.logdir):
     os.makedirs(args.logdir)
 
 # Fit images
@@ -57,9 +57,9 @@ for i in range(min_id, max_id + 1):
 
     # Setup model
     func_rep = Siren(
-        dim_in=2,
+        dim_in=1,
         dim_hidden=args.layer_size,
-        dim_out=3,
+        dim_out=1,
         num_layers=args.num_layers,
         final_activation=torch.nn.Identity(),
         w0_initial=args.w0_initial,

@@ -3,6 +3,7 @@ import torch
 from torch._C import dtype
 from typing import Dict
 
+from encoding import encode_height_width_to_32bit, encode_rgb_to_bits
 
 DTYPE_BIT_SIZE: Dict[dtype, int] = {
     torch.float32: 32,
@@ -37,14 +38,28 @@ def to_coordinates_and_features(img):
     # Coordinates are indices of all non zero locations of a tensor of ones of
     # same shape as spatial dimensions of image
     coordinates = torch.ones(img.shape[1:]).nonzero(as_tuple=False).float()
-    # Normalize coordinates to lie in [-.5, .5]
-    coordinates = coordinates / (img.shape[1] - 1) - 0.5
-    # Convert to range [-1, 1]
-    coordinates *= 2
+
+    #Encode Coordinates
+    coordinates = torch.tensor([encode_height_width_to_32bit(int(coord[0]), int(coord[1]))
+                                   for coord in coordinates])
+
+    #Normalize Encoded Coordinates
+    coordinates = torch.tensor([normalize_32bit_integer(int(encodedCoordinate))
+                                   for encodedCoordinate in coordinates])
+
+
     # Convert image to a tensor of features of shape (num_points, channels)
     features = img.reshape(img.shape[0], -1).T
+
+    #Encode Features
+    features = torch.tensor([encode_rgb_to_bits(channel[0], channel[1], channel[2])
+                                   for channel in features])
+
     return coordinates, features
 
+def normalize_32bit_integer(value):
+    max_32bit_unsigned = 2**32 - 1  # Maximum possible value for an unsigned 32-bit integer
+    return value / max_32bit_unsigned
 
 def model_size_in_bits(model):
     """Calculate total number of bits to store `model` parameters and buffers."""
