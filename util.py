@@ -51,6 +51,9 @@ def to_coordinates_and_features(img):
     # Convert image to a tensor of features of shape (num_points, channels)
     features = img.reshape(img.shape[0], -1).T
 
+    #Convert float RGB Features to unsigned integers
+    features = (features * 255).clamp(0, 255).to(torch.uint8)
+
     #Encode Features
     features = torch.tensor([encode_rgb_to_bits(channel[0], channel[1], channel[2])
                                    for channel in features])
