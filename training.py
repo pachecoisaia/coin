@@ -33,33 +33,47 @@ class Trainer():
             features (torch.Tensor): Tensor of features. Shape (num_points, feature_dim).
             num_iters (int): Number of iterations to train for.
         """
+
+        batch_size = 32  # Set an appropriate batch size based on your memory capacity
+        dataset = torch.utils.data.TensorDataset(coordinates, features)
+        data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4,
+                                                  pin_memory=True)
+
         with tqdm.trange(num_iters, ncols=100) as t:
             for i in t:
-                # Update model
-                self.optimizer.zero_grad()
-                predicted = self.representation(coordinates)
-                loss = self.loss_func(predicted, features)
-                loss.backward()
-                self.optimizer.step()
+                # Loop through batches
+                for batch_coords, batch_features in data_loader:
+                    # Move data to GPU
+                    batch_coords, batch_features = batch_coords.to('cuda'), batch_features.to('cuda')
 
-                # Calculate psnr
-                psnr = get_clamped_psnr(predicted, features)
+                    # Update model
+                    self.optimizer.zero_grad()
+                    predicted = self.representation(batch_coords)
+                    loss = self.loss_func(predicted, batch_features)
+                    loss.backward()
+                    self.optimizer.step()
 
-                # Print results and update logs
-                log_dict = {'loss': loss.item(),
-                            'psnr': psnr,
-                            'best_psnr': self.best_vals['psnr']}
-                t.set_postfix(**log_dict)
-                for key in ['loss', 'psnr']:
-                    self.logs[key].append(log_dict[key])
+                    # Calculate PSNR for current batch
+                    psnr = get_clamped_psnr(predicted, batch_features)
 
-                # Update best values
-                if loss.item() < self.best_vals['loss']:
-                    self.best_vals['loss'] = loss.item()
-                if psnr > self.best_vals['psnr']:
-                    self.best_vals['psnr'] = psnr
-                    # If model achieves best PSNR seen during training, update
-                    # model
-                    if i > int(num_iters / 2.):
-                        for k, v in self.representation.state_dict().items():
-                            self.best_model[k].copy_(v)
+                    # Print results and update logs
+                    log_dict = {'loss': loss.item(),
+                                'psnr': psnr,
+                                'best_psnr': self.best_vals['psnr']}
+                    t.set_postfix(**log_dict)
+                    for key in ['loss', 'psnr']:
+                        self.logs[key].append(log_dict[key])
+
+                    # Update best values
+                    if loss.item() < self.best_vals['loss']:
+                        self.best_vals['loss'] = loss.item()
+                    if psnr > self.best_vals['psnr']:
+                        self.best_vals['psnr'] = psnr
+                        # If model achieves best PSNR seen during training, update
+                        # model
+                        if i > int(num_iters / 2.):
+                            for k, v in self.representation.state_dict().items():
+                                self.best_model[k].copy_(v)
+
+                # Update the progress bar for every iteration (i.e., per batch)
+                t.set_description(f'Epoch {i}/{num_iters}, Loss: {log_dict["loss"]:.4f}, PSNR: {log_dict["psnr"]:.4f}')

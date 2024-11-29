@@ -58,7 +58,7 @@ for i in range(min_id, max_id + 1):
     # Setup model
     func_rep = Siren(
         dim_in=1,
-        dim_hidden=args.layer_size,
+        dim_hidden=3,
         dim_out=1,
         num_layers=args.num_layers,
         final_activation=torch.nn.Identity(),
