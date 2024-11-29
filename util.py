@@ -40,13 +40,19 @@ def to_coordinates_and_features(img):
     coordinates = torch.ones(img.shape[1:]).nonzero(as_tuple=False).float()
 
     #Encode Coordinates
-    coordinates = torch.tensor([encode_height_width_to_32bit(int(coord[0]), int(coord[1]))
-                                   for coord in coordinates])
+
+    coordinates = [encode_height_width_to_32bit(int(coord[0]), int(coord[1]))
+                                   for coord in coordinates]
+
+    coordinates = torch.tensor(coordinates)
 
     #Normalize Encoded Coordinates
-    coordinates = torch.tensor([normalize_32bit_integer(int(encodedCoordinate))
-                                   for encodedCoordinate in coordinates])
+    coordinates = [normalize_32bit_integer(int(encodedCoordinate))
+                                   for encodedCoordinate in coordinates]
 
+    coordinates = torch.tensor(coordinates)
+
+    coordinates = coordinates.unsqueeze(1)
 
     # Convert image to a tensor of features of shape (num_points, channels)
     features = img.reshape(img.shape[0], -1).T
@@ -55,8 +61,10 @@ def to_coordinates_and_features(img):
     features = (features * 255).clamp(0, 255).to(torch.uint8)
 
     #Encode Features
-    features = torch.tensor([encode_rgb_to_bits(channel[0], channel[1], channel[2])
-                                   for channel in features])
+    features = [encode_rgb_to_bits(channel[0], channel[1], channel[2])
+                                   for channel in features]
+
+    features = torch.tensor(features)
 
     return coordinates, features
 
