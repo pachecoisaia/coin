@@ -1,22 +1,31 @@
-def encode_rgb_to_bits(r, g, b):
+import torch
+
+
+def encode_rgb_to_bits_tensor(rgb_tensor):
     """
-    Encodes RGB values into a 24-bit integer.
+    Encodes RGB values into a 24-bit integer by shifting and combining the channels
+    for the entire tensor (vectorized approach).
 
     Args:
-        r (int): Red component (0–255).
-        g (int): Green component (0–255).
-        b (int): Blue component (0–255).
+        rgb_tensor (Tensor): A tensor of shape (N, 3) containing RGB values (r, g, b).
 
     Returns:
-        int: A 24-bit integer representing the RGB value.
+        Tensor: A tensor of encoded 24-bit integers.
     """
-    if not (0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
-        raise ValueError("Each RGB component must be in the range 0–255.")
+    # Split the tensor into R, G, B components
+    r, g, b = rgb_tensor[:, 0], rgb_tensor[:, 1], rgb_tensor[:, 2]
 
-    return (r << 16) | (g << 8) | b
+    if r.dtype not in [torch.uint8] or g.dtype not in [torch.uint8] or b.dtype not in [torch.uint8]:
+        raise ValueError("RGB must be unsigned integer 8 bit tensors.")
+
+    # Perform the encoding (bitwise shift and OR) for the entire tensor
+    encoded = (r << 16) | (g << 8) | b
+
+    return encoded
 
 
 def decode_bits_to_rgb(encoded_rgb):
+    # TODO Make Tensor Friendly
     """
     Decodes a 24-bit integer into its RGB components.
 
@@ -37,24 +46,34 @@ def decode_bits_to_rgb(encoded_rgb):
     return r, g, b
 
 
-def encode_height_width_to_32bit(height, width):
+def encode_normalize_height_width_to_32bit_tensor(heights, widths):
     """
-    Encodes two 16-bit integers into a single 32-bit integer.
+    Encodes two tensors of 16-bit integers into a single tensor of 32-bit floats after normalization.
 
     Args:
-        height (int): The 16-bit integer for the high 16 bits (0–65535).
-        width (int): The 16-bit integer for the low 16 bits (0–65535).
+        heights (Tensor): A tensor of height values (16-bit integers).
+        widths (Tensor): A tensor of width values (16-bit integers).
 
     Returns:
-        int: A 32-bit integer combining the two 16-bit integers.
+        Tensor: A tensor of normalized 32-bit floats.
     """
-    if not (0 <= height < 2 ** 16 and 0 <= width < 2 ** 16):
-        raise ValueError("Both integers must be 16-bit (0–65535).")
+    # Ensure heights and widths are tensors of integer type
 
-    return (height << 16) | width
+    if heights.dtype not in [torch.int16] or widths.dtype not in [torch.int16]:
+        raise ValueError("Heights and widths must be signed integer 16 bit tensors.")
+
+    # Perform bit-shifting and OR operation to combine into 32-bit integer (vectorized)
+    combined = (heights << 16) | widths  # Perform bitwise shift and OR
+
+    # Normalize the resulting 32-bit value
+    max_32bit_unsigned = 2 ** 32 - 1  # Maximum possible value for an unsigned 32-bit integer
+    normalized = combined.float() / max_32bit_unsigned  # Convert to float and normalize
+
+    return normalized
 
 
 def decode_height_width_to_16bit(value):
+    # TODO Make Tensor Friendly
     """
     Decodes a 32-bit integer into two 16-bit integers.
 

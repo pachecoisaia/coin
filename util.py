@@ -3,7 +3,7 @@ import torch
 from torch._C import dtype
 from typing import Dict
 
-from encoding import encode_height_width_to_32bit, encode_rgb_to_bits
+from encoding import encode_rgb_to_bits_tensor, encode_normalize_height_width_to_32bit_tensor
 
 DTYPE_BIT_SIZE: Dict[dtype, int] = {
     torch.float32: 32,
@@ -37,40 +37,29 @@ def to_coordinates_and_features(img):
     """
     # Coordinates are indices of all non zero locations of a tensor of ones of
     # same shape as spatial dimensions of image
-    coordinates = torch.ones(img.shape[1:]).nonzero(as_tuple=False).float()
+    coordinates = torch.ones(img.shape[1:]).nonzero(as_tuple=False).to(torch.int16)
 
-    #Encode Coordinates
+    # split height and width
+    height = coordinates[:, 0]
+    width = coordinates[:, 1]
 
-    coordinates = [encode_height_width_to_32bit(int(coord[0]), int(coord[1]))
-                                   for coord in coordinates]
+    # Encode Coordinates
+    coordinates = encode_normalize_height_width_to_32bit_tensor(height, width)
 
-    coordinates = torch.tensor(coordinates)
-
-    #Normalize Encoded Coordinates
-    coordinates = [normalize_32bit_integer(int(encodedCoordinate))
-                                   for encodedCoordinate in coordinates]
-
-    coordinates = torch.tensor(coordinates)
-
+    # reshape to be 393216x1
     coordinates = coordinates.unsqueeze(1)
 
     # Convert image to a tensor of features of shape (num_points, channels)
     features = img.reshape(img.shape[0], -1).T
 
-    #Convert float RGB Features to unsigned integers
+    # Convert float RGB Features to unsigned integers
     features = (features * 255).clamp(0, 255).to(torch.uint8)
 
-    #Encode Features
-    features = [encode_rgb_to_bits(channel[0], channel[1], channel[2])
-                                   for channel in features]
-
-    features = torch.tensor(features)
+    # Encode Features
+    features = encode_rgb_to_bits_tensor(features)
 
     return coordinates, features
 
-def normalize_32bit_integer(value):
-    max_32bit_unsigned = 2**32 - 1  # Maximum possible value for an unsigned 32-bit integer
-    return value / max_32bit_unsigned
 
 def model_size_in_bits(model):
     """Calculate total number of bits to store `model` parameters and buffers."""
