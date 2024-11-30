@@ -36,8 +36,8 @@ class Trainer():
 
         batch_size = 32  # Set an appropriate batch size based on your memory capacity
         dataset = torch.utils.data.TensorDataset(coordinates, features)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4,
-                                                  pin_memory=True)
+        data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0,
+                                                  pin_memory=False)
 
         with tqdm.trange(num_iters, ncols=100) as t:
             for i in t:
