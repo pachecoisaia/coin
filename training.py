@@ -24,7 +24,7 @@ class Trainer():
         # Store parameters of best model (in terms of highest PSNR achieved)
         self.best_model = OrderedDict((k, v.detach().clone()) for k, v in self.representation.state_dict().items())
 
-    def train(self, coordinates, features, num_iters):
+    def train(self, coordinates, features, device, batch_size, num_iters):
         """Fit neural net to image.
 
         Args:
@@ -34,7 +34,6 @@ class Trainer():
             num_iters (int): Number of iterations to train for.
         """
 
-        batch_size = 32  # Set an appropriate batch size based on your memory capacity
         dataset = torch.utils.data.TensorDataset(coordinates, features)
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0,
                                                   pin_memory=False)
@@ -44,7 +43,7 @@ class Trainer():
                 # Loop through batches
                 for batch_coords, batch_features in data_loader:
                     # Move data to GPU
-                    batch_coords, batch_features = batch_coords.to('cuda'), batch_features.to('cuda')
+                    batch_coords, batch_features = batch_coords.to(device), batch_features.to(device)
 
                     # Update model
                     self.optimizer.zero_grad()

@@ -6,6 +6,7 @@ import os
 import random
 import torch
 import util
+from encoding import decode_bits_to_rgb
 from siren import Siren
 from torchvision import transforms
 from torchvision.utils import save_image
@@ -58,7 +59,7 @@ for i in range(min_id, max_id + 1):
     # Setup model
     func_rep = Siren(
         dim_in=1,
-        dim_hidden=3,
+        dim_hidden=16,
         dim_out=1,
         num_layers=args.num_layers,
         final_activation=torch.nn.Identity(),
@@ -77,8 +78,12 @@ for i in range(min_id, max_id + 1):
     fp_bpp = util.bpp(model=func_rep, image=img)
     print(f'Full precision bpp: {fp_bpp:.2f}')
 
+    # Find optimal batch size
+    img_size = img.shape[1:]
+    batch_size = min(img_size[0], img_size[1])
+
     # Train model in full precision
-    trainer.train(coordinates, features, num_iters=args.num_iters)
+    trainer.train(coordinates, features, device, batch_size, num_iters=args.num_iters)
     print(f'Best training psnr: {trainer.best_vals["psnr"]:.2f}')
 
     # Log full precision results
@@ -93,7 +98,9 @@ for i in range(min_id, max_id + 1):
 
     # Save full precision image reconstruction
     with torch.no_grad():
-        img_recon = func_rep(coordinates).reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1)
+        predicted_rgb = func_rep(coordinates)
+        rgb = decode_bits_to_rgb(predicted_rgb)
+        img_recon = rgb.reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1)
         save_image(torch.clamp(img_recon, 0, 1).to('cpu'), args.logdir + f'/fp_reconstruction_{i}.png')
 
     # Convert model and coordinates to half precision. Note that half precision

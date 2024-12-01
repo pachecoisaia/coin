@@ -1,4 +1,5 @@
 import torch
+import torch.cuda
 
 
 def encode_rgb_to_bits_tensor(rgb_tensor):
@@ -24,8 +25,7 @@ def encode_rgb_to_bits_tensor(rgb_tensor):
     return encoded
 
 
-def decode_bits_to_rgb(encoded_rgb):
-    # TODO Make Tensor Friendly
+def decode_bits_to_rgb(encoded_tensor):
     """
     Decodes a 24-bit integer into its RGB components.
 
@@ -35,15 +35,16 @@ def decode_bits_to_rgb(encoded_rgb):
     Returns:
         tuple: A tuple of three integers (r, g, b), each in the range 0–255.
     """
-    if not (0 <= encoded_rgb <= 0xFFFFFF):
-        raise ValueError("Encoded RGB value must be a 24-bit integer (0–16777215).")
+    if not encoded_tensor.dtype in [torch.int32, torch.int64]:
+        raise ValueError("Encoded tensor must be of integer type (32-bit or 64-bit).")
 
-    # Extract each color component
-    r = (encoded_rgb >> 16) & 0xFF  # Red is the highest 8 bits
-    g = (encoded_rgb >> 8) & 0xFF  # Green is the middle 8 bits
-    b = encoded_rgb & 0xFF  # Blue is the lowest 8 bits
+    # Decode R, G, B channels
+    r = (encoded_tensor >> 16) & 0xFF  # Extract the top 8 bits for Red
+    g = (encoded_tensor >> 8) & 0xFF  # Extract the middle 8 bits for Green
+    b = encoded_tensor & 0xFF  # Extract the lowest 8 bits for Blue
 
-    return r, g, b
+    # Stack the decoded values into an RGB tensor
+    decoded_rgb = torch.stack((r, g, b), dim=1).to(torch.uint8)
 
 
 def encode_normalize_height_width_to_32bit_tensor(heights, widths):
