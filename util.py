@@ -3,7 +3,7 @@ import torch
 from torch._C import dtype
 from typing import Dict
 
-from encoding import encode_rgb_to_bits_tensor, encode_normalize_height_width_to_32bit_tensor
+from encoding import encode_rgb_to_bits_tensor, encode_height_width_to_32bit_tensor
 
 DTYPE_BIT_SIZE: Dict[dtype, int] = {
     torch.float32: 32,
@@ -44,7 +44,7 @@ def to_coordinates_and_features(img):
     width = coordinates[:, 1]
 
     # Encode Coordinates
-    coordinates = encode_normalize_height_width_to_32bit_tensor(height, width)
+    coordinates = encode_height_width_to_32bit_tensor(height, width)
 
     # reshape to be 393216x1
     coordinates = coordinates.unsqueeze(1)

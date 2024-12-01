@@ -47,7 +47,7 @@ def decode_bits_to_rgb(encoded_tensor):
     decoded_rgb = torch.stack((r, g, b), dim=1).to(torch.uint8)
 
 
-def encode_normalize_height_width_to_32bit_tensor(heights, widths):
+def encode_height_width_to_32bit_tensor(heights, widths):
     """
     Encodes two tensors of 16-bit integers into a single tensor of 32-bit floats after normalization.
 
@@ -66,11 +66,7 @@ def encode_normalize_height_width_to_32bit_tensor(heights, widths):
     # Perform bit-shifting and OR operation to combine into 32-bit integer (vectorized)
     combined = (heights << 16) | widths  # Perform bitwise shift and OR
 
-    # Normalize the resulting 32-bit value
-    max_32bit_unsigned = 2 ** 32 - 1  # Maximum possible value for an unsigned 32-bit integer
-    normalized = combined.float() / max_32bit_unsigned  # Convert to float and normalize
-
-    return normalized
+    return combined
 
 
 def decode_height_width_to_16bit(value):
