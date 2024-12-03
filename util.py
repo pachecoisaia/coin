@@ -2,12 +2,7 @@ import numpy as np
 import torch
 from typing import Dict
 
-<<<<<<< Updated upstream
-
-DTYPE_BIT_SIZE: Dict[dtype, int] = {
-=======
 DTYPE_BIT_SIZE: Dict[torch.dtype, int] = {
->>>>>>> Stashed changes
     torch.float32: 32,
     torch.float: 32,
     torch.float64: 64,
@@ -32,17 +27,6 @@ def to_coordinates_and_features(img):
     Args:
         img (torch.Tensor): Shape (3, height, width) representing an RGB image.
     """
-<<<<<<< Updated upstream
-    # Coordinates are indices of all non zero locations of a tensor of ones of
-    # same shape as spatial dimensions of image
-    coordinates = torch.ones(img.shape[1:]).nonzero(as_tuple=False).float()
-    # Normalize coordinates to lie in [-.5, .5]
-    coordinates = coordinates / (img.shape[1] - 1) - 0.5
-    # Convert to range [-1, 1]
-    coordinates *= 2
-    # Convert image to a tensor of features of shape (num_points, channels)
-    features = img.reshape(img.shape[0], -1).T
-=======
     height, width = img.shape[1], img.shape[2]
 
     # Generate grid of normalized coordinates
@@ -53,7 +37,6 @@ def to_coordinates_and_features(img):
 
     # Flatten the RGB image into features
     features = img.permute(1, 2, 0).reshape(-1, 3)  # Shape: (height * width, 3)
->>>>>>> Stashed changes
     return coordinates, features
 
 
@@ -107,9 +90,5 @@ def model_size_in_bits(model):
 
 
 def mean(list_):
-<<<<<<< Updated upstream
-    return np.mean(list_)
-=======
     """Compute mean of a list."""
     return np.mean(list_)
->>>>>>> Stashed changes

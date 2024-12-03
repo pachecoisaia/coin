@@ -25,14 +25,9 @@ class Trainer():
         # Store parameters of best model (in terms of highest PSNR achieved)
         self.best_model = OrderedDict((k, v.detach().clone()) for k, v in self.representation.state_dict().items())
 
-<<<<<<< Updated upstream
-    def train(self, coordinates, features, num_iters):
-        """Fit neural net to image.
-=======
     def train(self, coordinates, features, encoded_features, num_iters):
         """
         Fit neural net to image.
->>>>>>> Stashed changes
 
         Args:
             coordinates (torch.Tensor): Tensor of coordinates. Shape (num_points, coordinate_dim).
@@ -45,23 +40,6 @@ class Trainer():
                 # Update model
                 self.optimizer.zero_grad()
                 predicted = self.representation(coordinates)
-<<<<<<< Updated upstream
-                loss = self.loss_func(predicted, features)
-                loss.backward()
-                self.optimizer.step()
-
-                # Calculate psnr
-                psnr = get_clamped_psnr(predicted, features)
-
-                # Print results and update logs
-                log_dict = {'loss': loss.item(),
-                            'psnr': psnr,
-                            'best_psnr': self.best_vals['psnr']}
-                t.set_postfix(**log_dict)
-                for key in ['loss', 'psnr']:
-                    self.logs[key].append(log_dict[key])
-
-=======
 
                 # Compute the loss on raw RGB features
                 loss = self.loss_func(torch.clamp(predicted, 0, 1), features)  # Use raw features for gradients
@@ -85,21 +63,12 @@ class Trainer():
                 for key in ['loss', 'psnr']:
                     self.logs[key].append(log_dict[key])
 
->>>>>>> Stashed changes
                 # Update best values
                 if loss.item() < self.best_vals['loss']:
                     self.best_vals['loss'] = loss.item()
                 if psnr > self.best_vals['psnr']:
                     self.best_vals['psnr'] = psnr
-<<<<<<< Updated upstream
-                    # If model achieves best PSNR seen during training, update
-                    # model
-                    if i > int(num_iters / 2.):
-                        for k, v in self.representation.state_dict().items():
-                            self.best_model[k].copy_(v)
-=======
                     # If model achieves best PSNR seen during training, update model
                     if i > int(num_iters / 2.):
                         for k, v in self.representation.state_dict().items():
                             self.best_model[k].copy_(v)
->>>>>>> Stashed changes

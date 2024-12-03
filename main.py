@@ -26,7 +26,7 @@ parser.add_argument("-ni", "--num_iters", help="Number of iterations to train fo
 parser.add_argument("-lr", "--learning_rate", help="Learning rate", type=float, default=2e-4)
 parser.add_argument("-se", "--seed", help="Random seed", type=int, default=random.randint(1, int(1e6)))
 parser.add_argument("-fd", "--full_dataset", help="Whether to use full dataset", action='store_true')
-parser.add_argument("-iid", "--image_id", help="Image ID to train on, if not the full dataset", type=int, default=12)
+parser.add_argument("-iid", "--image_id", help="Image ID to train on, if not the full dataset", type=int, default=20)
 parser.add_argument("-lss", "--layer_size", help="Layer sizes as list of ints", type=int, default=28)
 parser.add_argument("-nl", "--num_layers", help="Number of layers", type=int, default=10)
 parser.add_argument("-w0", "--w0", help="w0 parameter for SIREN model.", type=float, default=30.0)
@@ -86,9 +86,15 @@ for i in range(min_id, max_id + 1):
     # Encode RGB features into 32-bit packed integers
     encoded_features = encode_rgb_to_bits_tensor((features * 255).to(torch.uint8))
 
+    # Calculate model size (FP)
+    model_size = util.model_size_in_bits(func_rep) / 8000.0  # Convert to kilobytes
+    print(f"Model size: {model_size:.1f}kB")
+    fp_bpp = util.bpp(model=func_rep, image=img)
+    print(f"Full precision bpp: {fp_bpp:.2f}")
+
     # Train model in full precision
-    trainer.train(coordinates, features, num_iters=args.num_iters)
-    print(f'Best training psnr: {trainer.best_vals["psnr"]:.2f}')
+    trainer.train(coordinates, features, encoded_features, num_iters=args.num_iters)
+    print(f"Best full precision PSNR: {trainer.best_vals['psnr']:.2f}")
 
     # Log full precision results
     results['fp_bpp'].append(fp_bpp)
