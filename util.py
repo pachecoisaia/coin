@@ -114,3 +114,14 @@ def get_clamped_psnr(img, img_recon):
 
 def mean(list_):
     return np.mean(list_)
+
+
+def remove_msb_tensor(tensor, n):
+    # Compute the bit length for each element in the tensor
+    num_bits = 32
+
+    # Generate a mask to keep the lower (bit_length - n) bits
+    mask = (1 << (num_bits - n)) - 1
+
+    # Apply the mask to the tensor and return the result
+    return tensor & mask

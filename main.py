@@ -11,7 +11,7 @@ from siren import Siren
 from torchvision import transforms
 from torchvision.utils import save_image
 from training import Trainer
-
+from util import remove_msb_tensor
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-ld", "--logdir", help="Path to save logs", default=f"/tmp/{getpass.getuser()}")
@@ -99,9 +99,13 @@ for i in range(min_id, max_id + 1):
     # Save full precision image reconstruction
     with torch.no_grad():
         predicted_rgb = func_rep(coordinates)
+        predicted_rgb = predicted_rgb.view(torch.int32)
+        predicted_rgb = remove_msb_tensor(predicted_rgb, 8)
         rgb = decode_bits_to_rgb(predicted_rgb)
-        img_recon = rgb.reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1)
-        save_image(torch.clamp(img_recon, 0, 1).to('cpu'), args.logdir + f'/fp_reconstruction_{i}.png')
+        img_recon = rgb.reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
+        # Clamp the image to the range [0, 1] for float32
+        img_recon = img_recon/255
+        save_image(img_recon, args.logdir + f'/fp_reconstruction_{i}.png')
 
     # Convert model and coordinates to half precision. Note that half precision
     # torch.sin is only implemented on GPU, so must use cuda
@@ -116,9 +120,15 @@ for i in range(min_id, max_id + 1):
 
         # Compute image reconstruction and PSNR
         with torch.no_grad():
-            img_recon = func_rep(coordinates).reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
+            predicted_rgb = func_rep(coordinates)
+            predicted_rgb = predicted_rgb.view(torch.int16)
+            predicted_rgb = remove_msb_tensor(predicted_rgb, 8)
+            rgb = decode_bits_to_rgb(predicted_rgb)
+            img_recon = rgb.reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
+            # Clamp the image to the range [0, 1] for float32
+            img_recon = img_recon / 255
             hp_psnr = util.get_clamped_psnr(img_recon, img)
-            save_image(torch.clamp(img_recon, 0, 1).to('cpu'), args.logdir + f'/hp_reconstruction_{i}.png')
+            save_image(img_recon, args.logdir + f'/hp_reconstruction_{i}.png')
             print(f'Half precision psnr: {hp_psnr:.2f}')
             results['hp_psnr'].append(hp_psnr)
     else:
