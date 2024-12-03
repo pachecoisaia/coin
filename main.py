@@ -8,17 +8,6 @@ from siren import Siren
 from torchvision import transforms
 from torchvision.utils import save_image
 from training import Trainer
-<<<<<<< Updated upstream
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-ld", "--logdir", help="Path to save logs", default=f"/tmp/{getpass.getuser()}")
-parser.add_argument("-ni", "--num_iters", help="Number of iterations to train for", type=int, default=50000)
-parser.add_argument("-lr", "--learning_rate", help="Learning rate", type=float, default=2e-4)
-parser.add_argument("-se", "--seed", help="Random seed", type=int, default=random.randint(1, int(1e6)))
-parser.add_argument("-fd", "--full_dataset", help="Whether to use full dataset", action='store_true')
-parser.add_argument("-iid", "--image_id", help="Image ID to train on, if not the full dataset", type=int, default=15)
-=======
 from encoding import encode_rgb_to_bits_tensor, decode_bits_to_rgb  # Import encoding functions
 import json
 
@@ -38,7 +27,6 @@ parser.add_argument("-lr", "--learning_rate", help="Learning rate", type=float, 
 parser.add_argument("-se", "--seed", help="Random seed", type=int, default=random.randint(1, int(1e6)))
 parser.add_argument("-fd", "--full_dataset", help="Whether to use full dataset", action='store_true')
 parser.add_argument("-iid", "--image_id", help="Image ID to train on, if not the full dataset", type=int, default=12)
->>>>>>> Stashed changes
 parser.add_argument("-lss", "--layer_size", help="Layer sizes as list of ints", type=int, default=28)
 parser.add_argument("-nl", "--num_layers", help="Number of layers", type=int, default=10)
 parser.add_argument("-w0", "--w0", help="w0 parameter for SIREN model.", type=float, default=30.0)
@@ -98,21 +86,9 @@ for i in range(min_id, max_id + 1):
     # Encode RGB features into 32-bit packed integers
     encoded_features = encode_rgb_to_bits_tensor((features * 255).to(torch.uint8))
 
-<<<<<<< Updated upstream
     # Train model in full precision
     trainer.train(coordinates, features, num_iters=args.num_iters)
     print(f'Best training psnr: {trainer.best_vals["psnr"]:.2f}')
-=======
-    # Calculate model size (FP)
-    model_size = util.model_size_in_bits(func_rep) / 8000.0  # Convert to kilobytes
-    print(f"Model size: {model_size:.1f}kB")
-    fp_bpp = util.bpp(model=func_rep, image=img)
-    print(f"Full precision bpp: {fp_bpp:.2f}")
-
-    # Train model in full precision
-    trainer.train(coordinates, features, encoded_features, num_iters=args.num_iters)
-    print(f"Best full precision PSNR: {trainer.best_vals['psnr']:.2f}")
->>>>>>> Stashed changes
 
     # Log full precision results
     results['fp_bpp'].append(fp_bpp)
@@ -124,11 +100,7 @@ for i in range(min_id, max_id + 1):
     # Save full-precision reconstructed image
     with torch.no_grad():
         img_recon = func_rep(coordinates).reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1)
-<<<<<<< Updated upstream
-        save_image(torch.clamp(img_recon, 0, 1).to('cpu'), args.logdir + f'/fp_reconstruction_{i}.png')
-=======
         save_image(torch.clamp(img_recon, 0, 1).to("cpu"), os.path.join(args.logdir, f"fp_reconstruction_{i}.png"))
->>>>>>> Stashed changes
 
         # Encode reconstructed RGB into 32-bit integers
         encoded_recon = encode_rgb_to_bits_tensor((img_recon.permute(1, 2, 0) * 255).to(torch.uint8).reshape(-1, 3))
@@ -145,17 +117,10 @@ for i in range(min_id, max_id + 1):
 
         # Compute half-precision reconstruction and PSNR
         with torch.no_grad():
-<<<<<<< Updated upstream
-            img_recon = func_rep(coordinates).reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
-            hp_psnr = util.get_clamped_psnr(img_recon, img)
-            save_image(torch.clamp(img_recon, 0, 1).to('cpu'), args.logdir + f'/hp_reconstruction_{i}.png')
-            print(f'Half precision psnr: {hp_psnr:.2f}')
-=======
             img_recon_hp = func_rep(coordinates).reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
             hp_psnr = util.get_clamped_psnr(img_recon_hp, img)
             save_image(torch.clamp(img_recon_hp, 0, 1).to("cpu"), os.path.join(args.logdir, f"hp_reconstruction_{i}.png"))
             print(f"Half precision PSNR: {hp_psnr:.2f}")
->>>>>>> Stashed changes
             results['hp_psnr'].append(hp_psnr)
     else:
         results['hp_bpp'].append(fp_bpp)
