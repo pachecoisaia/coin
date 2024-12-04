@@ -29,6 +29,8 @@ args = parser.parse_args()
 
 # Set up torch and cuda
 dtype = torch.float32
+dtype2 = torch.int32
+dtype3 = torch.int16
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 torch.set_default_tensor_type('torch.cuda.FloatTensor' if torch.cuda.is_available() else 'torch.FloatTensor')
 
@@ -96,11 +98,11 @@ for i in range(min_id, max_id + 1):
     # Update current model to be best model
     func_rep.load_state_dict(trainer.best_model)
 
-    # Save full precision image reconstruction
+    # Save full precision image reconstruction0.
+
     with torch.no_grad():
         predicted_rgb = func_rep(coordinates)
-        predicted_rgb = predicted_rgb.view(torch.int32)
-        predicted_rgb = remove_msb_tensor(predicted_rgb, 8)
+        predicted_rgb = predicted_rgb.view(dtype2)
         rgb = decode_bits_to_rgb(predicted_rgb)
         img_recon = rgb.reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
         # Clamp the image to the range [0, 1] for float32
@@ -121,8 +123,8 @@ for i in range(min_id, max_id + 1):
         # Compute image reconstruction and PSNR
         with torch.no_grad():
             predicted_rgb = func_rep(coordinates)
-            predicted_rgb = predicted_rgb.view(torch.int16)
-            predicted_rgb = remove_msb_tensor(predicted_rgb, 8)
+            predicted_rgb = predicted_rgb.view(dtype3)
+            #predicted_rgb = remove_msb_tensor(predicted_rgb)
             rgb = decode_bits_to_rgb(predicted_rgb)
             img_recon = rgb.reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
             # Clamp the image to the range [0, 1] for float32

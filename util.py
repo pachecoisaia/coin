@@ -37,23 +37,25 @@ def to_coordinates_and_features(img):
     """
     # Coordinates are indices of all non zero locations of a tensor of ones of
     # same shape as spatial dimensions of image
-    coordinates = torch.ones(img.shape[1:]).nonzero(as_tuple=False).to(torch.int16)
+    height, width = img.shape[1], img.shape[2]
 
-    # split height and width
-    height = coordinates[:, 0]
-    width = coordinates[:, 1]
+    # Generate the x (width) and y (height) coordinates
+    x_coords = torch.arange(width, dtype=torch.int32).repeat(height, 1)  # (height, width)
+    y_coords = torch.arange(height, dtype=torch.int32).repeat(width, 1).T  # (height, width)
 
-    # Encode Coordinates
-    coordinates = encode_height_width_to_32bit_tensor(height, width)
+
+    coordinates = encode_height_width_to_32bit_tensor(x_coords, y_coords)
+
+    #coordinates = torch.stack(coordinates, dim=-1)
 
     # reshape to be 393216x1
-    coordinates = coordinates.unsqueeze(1)
+    #coordinates = coordinates.unsqueeze(1)
 
     # Convert image to a tensor of features of shape (num_points, channels)
-    features = img.reshape(img.shape[0], -1).T
+    #features = img.permute(1, 2, 0).reshape(-1, 3)  # Shape: (height * width, 3)
 
     # Convert float RGB Features to unsigned integers
-    features = (features * 255).clamp(0, 255).to(torch.uint8)
+    features = (img * 255).to(dtype=torch.uint8).permute(1, 2, 0)
 
     # Encode Features
     features = encode_rgb_to_bits_tensor(features)
@@ -116,12 +118,26 @@ def mean(list_):
     return np.mean(list_)
 
 
-def remove_msb_tensor(tensor, n):
+def remove_msb_tensor(tensor):
     # Compute the bit length for each element in the tensor
-    num_bits = 32
+    if tensor.dtype not in [torch.int16, torch.int32 or torch.int64]:
+        raise ValueError("tensor must be signed integer 32-bit/64-bit tensors.")
+
+    numBits = 0
+
+    if tensor.dtype == torch.int16:
+        numBits = 16
+
+    if tensor.dtype == torch.int32:
+        numBits = 32
+
+    if tensor.dtype == torch.int64:
+        numBits = 64
+
+    n = numBits - 24
 
     # Generate a mask to keep the lower (bit_length - n) bits
-    mask = (1 << (num_bits - n)) - 1
+    mask = (1 << (numBits - n)) - 1
 
     # Apply the mask to the tensor and return the result
     return tensor & mask

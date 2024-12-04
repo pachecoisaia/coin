@@ -3,45 +3,27 @@ import torch.cuda
 
 
 def encode_rgb_to_bits_tensor(rgb_tensor):
-    """
-    Encodes RGB values into a 32-bit integer by shifting and combining the channels
-    for the entire tensor (vectorized approach).
+    # Extract R, G, B channels
+    r = rgb_tensor[:, :, 0].to(torch.int32)
+    g = rgb_tensor[:, :, 1].to(torch.int32)
+    b = rgb_tensor[:, :, 2].to(torch.int32)
 
-    Args:
-        rgb_tensor (Tensor): A tensor of shape (N, 3) containing RGB values (r, g, b).
+    # Perform bitwise encoding
+    value = (r << 16) | (g << 8) | b
 
-    Returns:
-        Tensor: A tensor of encoded 24-bit integers.
-    """
-    # Split the tensor into R, G, B components
-    r, g, b = rgb_tensor[:, 0], rgb_tensor[:, 1], rgb_tensor[:, 2]
-
-    if r.dtype not in [torch.uint8] or g.dtype not in [torch.uint8] or b.dtype not in [torch.uint8]:
-        raise ValueError("RGB must be unsigned integer 8 bit tensors.")
-
-    # Perform the encoding (bitwise shift and OR) for the entire tensor
-    encoded = (r << 16) | (g << 8) | b
-
-    return encoded
+    return value
 
 
 def decode_bits_to_rgb(encoded_tensor):
-    """
-    Decodes a 24-bit integer into its RGB components.
 
-    Args:
-        encoded_rgb (int): A 32-bit integer representing an RGB value.
-
-    Returns:
-        tuple: A tuple of three integers (r, g, b), each in the range 0–255.
-    """
-    if not encoded_tensor.dtype in [torch.int32, torch.int16]:
-        raise ValueError("Encoded tensor must be of integer type (32-bit).")
+    r_mask = 0xFF0000
+    g_mask = 0xFF00
+    b_mask = 0xFF
 
     # Decode R, G, B channels
-    r = (encoded_tensor >> 16) & 0xFF  # Extract the top 8 bits for Red
-    g = (encoded_tensor >> 8) & 0xFF  # Extract the middle 8 bits for Green
-    b = encoded_tensor & 0xFF  # Extract the lowest 8 bits for Blue
+    r = int(encoded_tensor & r_mask) >> 16
+    g = int(encoded_tensor & g_mask) >> 8
+    b = int(encoded_tensor) & b_mask
 
     # Stack the decoded values into an RGB tensor
     decoded_rgb = torch.stack((r, g, b), dim=1)
@@ -49,7 +31,7 @@ def decode_bits_to_rgb(encoded_tensor):
     return decoded_rgb
 
 
-def encode_height_width_to_32bit_tensor(heights, widths):
+def encode_height_width_to_32bit_tensor(width, height):
     """
     Encodes two tensors of 32-bit integers into a single tensor of 32-bit floats after normalization.
 
@@ -62,11 +44,18 @@ def encode_height_width_to_32bit_tensor(heights, widths):
     """
     # Ensure heights and widths are tensors of integer type
 
-    if heights.dtype not in [torch.int16] or widths.dtype not in [torch.int16]:
+    if width.dtype not in [torch.int32, torch.int64] or height.dtype not in [torch.int16, torch.int32, torch.int64]:
         raise ValueError("Heights and widths must be signed integer 16 bit tensors.")
 
-    # Perform bit-shifting and OR operation to combine into 32-bit integer (vectorized)
-    combined = (heights << 16) | widths  # Perform bitwise shift and OR
+    max_bits = {
+        torch.int32: 16,
+        torch.int64: 32
+    }
+    num_bits = max_bits[width.dtype]
+
+    # Combine width and height into a single integer tensor
+    combined = (width << num_bits) | height
+
 
     return combined
 
