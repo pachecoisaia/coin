@@ -43,22 +43,13 @@ def to_coordinates_and_features(img):
     x_coords = torch.arange(width, dtype=torch.int32).repeat(height, 1)  # (height, width)
     y_coords = torch.arange(height, dtype=torch.int32).repeat(width, 1).T  # (height, width)
 
-
-    coordinates = encode_height_width_to_32bit_tensor(x_coords, y_coords)
-
-    #coordinates = torch.stack(coordinates, dim=-1)
-
-    # reshape to be 393216x1
-    #coordinates = coordinates.unsqueeze(1)
-
-    # Convert image to a tensor of features of shape (num_points, channels)
-    #features = img.permute(1, 2, 0).reshape(-1, 3)  # Shape: (height * width, 3)
+    coordinates = encode_height_width_to_32bit_tensor(x_coords, y_coords).flatten().unsqueeze(1).flatten()
 
     # Convert float RGB Features to unsigned integers
     features = (img * 255).to(dtype=torch.uint8).permute(1, 2, 0)
 
     # Encode Features
-    features = encode_rgb_to_bits_tensor(features)
+    features = encode_rgb_to_bits_tensor(features).flatten()
 
     return coordinates, features
 

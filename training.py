@@ -47,7 +47,7 @@ class Trainer():
 
                     # Update model
                     self.optimizer.zero_grad()
-                    predicted = self.representation(batch_coords)
+                    predicted = self.representation(batch_coords.unsqueeze(1))
                     loss = self.loss_func(predicted, batch_features)
                     loss.backward()
                     self.optimizer.step()

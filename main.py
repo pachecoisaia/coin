@@ -11,16 +11,15 @@ from siren import Siren
 from torchvision import transforms
 from torchvision.utils import save_image
 from training import Trainer
-from util import remove_msb_tensor
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-ld", "--logdir", help="Path to save logs", default=f"/tmp/{getpass.getuser()}")
-parser.add_argument("-ni", "--num_iters", help="Number of iterations to train for", type=int, default=10)
+parser.add_argument("-ni", "--num_iters", help="Number of iterations to train for", type=int, default=1)
 parser.add_argument("-lr", "--learning_rate", help="Learning rate", type=float, default=2e-4)
 parser.add_argument("-se", "--seed", help="Random seed", type=int, default=random.randint(1, int(1e6)))
 parser.add_argument("-fd", "--full_dataset", help="Whether to use full dataset", action='store_true')
 parser.add_argument("-iid", "--image_id", help="Image ID to train on, if not the full dataset", type=int, default=20)
-parser.add_argument("-lss", "--layer_size", help="Layer sizes as list of ints", type=int, default=3)
+parser.add_argument("-lss", "--layer_size", help="Layer sizes as list of ints", type=int, default=10)
 parser.add_argument("-nl", "--num_layers", help="Number of layers", type=int, default=10)
 parser.add_argument("-w0", "--w0", help="w0 parameter for SIREN model.", type=float, default=30.0)
 parser.add_argument("-w0i", "--w0_initial", help="w0 parameter for first layer of SIREN model.", type=float, default=30.0)
@@ -82,7 +81,7 @@ for i in range(min_id, max_id + 1):
 
     # Find optimal batch size
     img_size = img.shape[1:]
-    batch_size = min(img_size[0], img_size[1])
+    batch_size = max(img_size[0], img_size[1])
 
     # Train model in full precision
     trainer.train(coordinates, features, device, batch_size, num_iters=args.num_iters)
@@ -101,7 +100,7 @@ for i in range(min_id, max_id + 1):
     # Save full precision image reconstruction0.
 
     with torch.no_grad():
-        predicted_rgb = func_rep(coordinates)
+        predicted_rgb = func_rep(coordinates.unsqueeze(1))
         predicted_rgb = predicted_rgb.view(dtype2)
         rgb = decode_bits_to_rgb(predicted_rgb)
         img_recon = rgb.reshape(img.shape[1], img.shape[2], 3).permute(2, 0, 1).float()
@@ -122,7 +121,7 @@ for i in range(min_id, max_id + 1):
 
         # Compute image reconstruction and PSNR
         with torch.no_grad():
-            predicted_rgb = func_rep(coordinates)
+            predicted_rgb = func_rep(coordinates.unsqueeze(1))
             predicted_rgb = predicted_rgb.view(dtype3)
             #predicted_rgb = remove_msb_tensor(predicted_rgb)
             rgb = decode_bits_to_rgb(predicted_rgb)

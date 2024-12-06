@@ -21,9 +21,9 @@ def decode_bits_to_rgb(encoded_tensor):
     b_mask = 0xFF
 
     # Decode R, G, B channels
-    r = int(encoded_tensor & r_mask) >> 16
-    g = int(encoded_tensor & g_mask) >> 8
-    b = int(encoded_tensor) & b_mask
+    r = (encoded_tensor & r_mask) >> 16
+    g = (encoded_tensor & g_mask) >> 8
+    b = (encoded_tensor) & b_mask
 
     # Stack the decoded values into an RGB tensor
     decoded_rgb = torch.stack((r, g, b), dim=1)
