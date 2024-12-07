@@ -11,6 +11,10 @@ from siren import Siren
 from torchvision import transforms
 from torchvision.utils import save_image
 from training import Trainer
+from timer import Timer
+
+timer = Timer()
+timer.start()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-ld", "--logdir", help="Path to save logs", default=f"/tmp/{getpass.getuser()}")
@@ -107,6 +111,8 @@ for i in range(min_id, max_id + 1):
         # Clamp the image to the range [0, 1] for float32
         img_recon = img_recon/255
         save_image(img_recon, args.logdir + f'/fp_reconstruction_{i}.png')
+        timer.stop()
+
 
     # Convert model and coordinates to half precision. Note that half precision
     # torch.sin is only implemented on GPU, so must use cuda
